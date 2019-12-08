@@ -26,7 +26,6 @@ SystemState systemState;
 Motor motor(relayOnePin,
             relayTwoPin,
             motorDriverPin);
-SafetyTests safetyTests(&systemState);
 DoorController doorController(&motor,
                              &systemState);
 UserInterface userInterface(&systemState,
@@ -41,6 +40,9 @@ LEDController ledController(&systemState,
                             ledRedPin,
                             ledGreenPin,
                             ledBluePin);
+SafetyTests safetyTests(&motor, 
+                        &doorController, 
+                        &systemState);
 
 void setup() {
 
@@ -64,6 +66,7 @@ void setup() {
     Particle.function("resetMemory", resetMemory);
     Particle.variable("state", systemState.stateAsString);
     Particle.variable("userMessage", systemState.userMessage);
+    Particle.variable("movementSpeed", doorController.movementSensorSpeedStr);
 }
 
 void loop() {

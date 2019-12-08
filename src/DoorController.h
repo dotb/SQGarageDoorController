@@ -9,7 +9,9 @@
 enum motor_status {
   motor_stopped,
   motor_running_forward_closing,
-  motor_running_backward_opening
+  motor_running_backward_opening,
+  motor_freewheeling_forward_closing,
+  motor_freewheeling_backward_opening,
 };
 
 class DoorController {
@@ -22,13 +24,15 @@ class DoorController {
         virtual void stopMotor();
         virtual void loop();
 
+        motor_status motorStatus = motor_stopped;
+        unsigned long lastMotorMovementTimeStamp = 0;
+        unsigned int movementSensorSpeed = 0;
     private:
         Motor *_motor; 
         SystemState *_sysState;
-        motor_status _motorStatus = motor_stopped;
-        unsigned long _lastMotorMovementTimeStamp = 0;
         virtual void syncDoorPosition();
         virtual int getAppropriateSpeed();
+        virtual void updateMotorStatus();
 };
 
 #endif

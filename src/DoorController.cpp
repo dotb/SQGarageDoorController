@@ -25,22 +25,15 @@ void DoorController::setDoorPosition(String newPercentage) {
 // Called from the main loop
 void DoorController::syncDoorPosition() {
 
-    // Set the motor status to stopped once it has slowed down.
-    if (micros() - _lastMotorMovementTimeStamp > 100000) {
-        _motorStatus = motor_stopped;
-    }
-
     // move the door toward the destimation position
     int speed = getAppropriateSpeed();
 
     // Move the door forward (close the door)
     if (_sysState->currentPosition < _sysState->targetPosition - 2) {
-        _motorStatus = motor_running_forward_closing;
         _motor->turnMotorForward(speed);
 
     // Move the door backward (open the door)
     } else if (_sysState->currentPosition > _sysState->targetPosition + 2) {
-        _motorStatus = motor_running_backward_opening;
         _motor->turnMotorBackward(speed);
 
     // We've reached the destination, stop the motor
@@ -85,17 +78,28 @@ int DoorController::getAppropriateSpeed() {
 void DoorController::motorDidChangeIncrement() {
     // Debounce the interrupt
     unsigned long timeStampNow = micros();
-    if (timeStampNow - _lastMotorMovementTimeStamp > 1000) {
-        _lastMotorMovementTimeStamp = timeStampNow;
+    movementSensorSpeed = timeStampNow - lastMotorMovementTimeStamp;
+    if (movementSensorSpeed > 1000) {
+        lastMotorMovementTimeStamp = timeStampNow;
 
-        switch (_motorStatus) {
+        switch (motorStatus) {
             case motor_stopped:
                 _sysState->systemStatus = sys_error;
                 break;
+
             case motor_running_forward_closing:
                 _sysState->currentPosition++;
                 break;
+
+            case motor_freewheeling_forward_closing:
+                _sysState->currentPosition++;
+                break;
+
             case motor_running_backward_opening:
+                _sysState->currentPosition--;
+                break;
+
+            case motor_freewheeling_backward_opening:
                 _sysState->currentPosition--;
                 break;
         }
@@ -120,6 +124,30 @@ void DoorController::stopMotor() {
     _sysState->targetPosition = _sysState->currentPosition;
 }
 
+void DoorController::updateMotorStatus() {
+    switch (_motor->lastMotorCommand) {
+        case motor_run_forward_closing:
+            motorStatus = motor_running_forward_closing;
+            break;
+
+        case motor_run_backward_opening:
+            motorStatus = motor_running_backward_opening;
+            break;
+
+        case motor_stop:
+            if (movementSensorSpeed > 100000) {
+                motorStatus = motor_stopped;
+
+            } else if (motor_running_forward_closing == motorStatus) {
+                motorStatus = motor_freewheeling_forward_closing;
+
+            } else if (motor_running_backward_opening == motorStatus) {
+                motorStatus = motor_freewheeling_backward_opening;
+            }
+            break;
+    }
+}
 void DoorController::loop() {
     syncDoorPosition();
+    updateMotorStatus();
 }

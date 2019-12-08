@@ -25,21 +25,29 @@ void DoorController::setDoorPosition(String newPercentage) {
 // Called from the main loop
 void DoorController::syncDoorPosition() {
 
+    // Set the motor status to stopped once it has slowed down.
+    if (micros() - _lastMotorMovementTimeStamp > 100000) {
+        _motorStatus = motor_stopped;
+    }
+
     // move the door toward the destimation position
     int speed = getAppropriateSpeed();
 
     // Move the door forward (close the door)
-    if (_sysState->currentPosition < _sysState->targetPosition) {
+    if (_sysState->currentPosition < _sysState->targetPosition - 2) {
+        _motorStatus = motor_running_forward_closing;
         _motor->turnMotorForward(speed);
 
     // Move the door backward (open the door)
-    } else if (_sysState->currentPosition > _sysState->targetPosition) {
+    } else if (_sysState->currentPosition > _sysState->targetPosition + 2) {
+        _motorStatus = motor_running_backward_opening;
         _motor->turnMotorBackward(speed);
 
     // We've reached the destination, stop the motor
     } else {    
         stopMotor();
     }
+
 }
 
 /* 
@@ -54,7 +62,7 @@ int DoorController::getAppropriateSpeed() {
 
     // Move slowly when setting end points
     if (sys_configure_endpoints == _sysState->systemStatus) {
-        return 220;
+        return 180;
 
     // Move fast if we need to cover distance
     } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 300) {
@@ -66,7 +74,7 @@ int DoorController::getAppropriateSpeed() {
 
     // By default move slowly, i.e. when close to the resting point
     } else {
-        return 220;
+        return 200;
     }
 }
 
@@ -77,10 +85,10 @@ int DoorController::getAppropriateSpeed() {
 void DoorController::motorDidChangeIncrement() {
     // Debounce the interrupt
     unsigned long timeStampNow = micros();
-    if (timeStampNow - _lastMotorMovementTimeStamp > 10) {
+    if (timeStampNow - _lastMotorMovementTimeStamp > 1000) {
         _lastMotorMovementTimeStamp = timeStampNow;
 
-        switch (_motor->motorStatus) {
+        switch (_motorStatus) {
             case motor_stopped:
                 _sysState->systemStatus = sys_error;
                 break;
@@ -97,13 +105,13 @@ void DoorController::motorDidChangeIncrement() {
 
 // Increment the up / open / backward point
 void DoorController::nudgeOpenEndpoint() {
-    _sysState->endPointOpenPosition = _sysState->currentPosition - 2;
+    _sysState->endPointOpenPosition = _sysState->currentPosition - 4;
     _sysState->targetPosition = _sysState->endPointOpenPosition;
 }
 
 // Increment the down / closed / forward point
 void DoorController::nudgeClosedEndpoint() {
-    _sysState->endPointClosedPosition = _sysState->currentPosition + 2;
+    _sysState->endPointClosedPosition = _sysState->currentPosition + 4;
     _sysState->targetPosition = _sysState->endPointClosedPosition;
 }
 

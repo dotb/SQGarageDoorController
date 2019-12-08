@@ -5,6 +5,13 @@
 #include "SystemState.h"
 #include "Motor.h"
 
+// Motor status
+enum motor_status {
+  motor_stopped,
+  motor_running_forward_closing,
+  motor_running_backward_opening
+};
+
 class DoorController {
     public:
         DoorController(Motor *motor, SystemState *sysState);
@@ -16,8 +23,9 @@ class DoorController {
         virtual void loop();
 
     private:
-        SystemState *_sysState;
         Motor *_motor; 
+        SystemState *_sysState;
+        motor_status _motorStatus = motor_stopped;
         unsigned long _lastMotorMovementTimeStamp = 0;
         virtual void syncDoorPosition();
         virtual int getAppropriateSpeed();

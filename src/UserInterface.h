@@ -4,11 +4,12 @@
 #include "Arduino.h"
 #include "Motor.h"
 #include "SystemState.h"
+#include "DoorController.h"
 
 class UserInterface {
 public:
-    UserInterface(Motor *motor, 
-                  SystemState *sysState, 
+    UserInterface(SystemState *sysState,
+                  DoorController *doorController,
                   int upButtonPin, 
                   int downButtonPin,
                   int codeButtonPin,
@@ -20,6 +21,7 @@ public:
 private:
     Motor *_motor;
     SystemState *_sysState;
+    DoorController *_doorController;
     int _upButtonPin;
     int _downButtonPin;
     int _codeButtonPin;

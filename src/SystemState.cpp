@@ -1,9 +1,5 @@
 #include "SystemState.h"
 
-SystemState::SystemState(Motor *motor) {
-    _motor = motor;
-}
-
 void SystemState::saveToMemory() {
     EEPROM.put(_MEM_endPointOpenPosition, endPointOpenPosition);
     EEPROM.put(_MEM_endPointClosedPosition, endPointClosedPosition);
@@ -19,7 +15,8 @@ void SystemState::restoreFromMemory() {
     // Check that the memory doesn't contain defaults.
     if (currentPosition >= 0xFFFF ||
         endPointOpenPosition >= 0xFFFF ||
-        endPointClosedPosition >= 0xFFFF) {
+        endPointClosedPosition >= 0xFFFF || 
+        (endPointOpenPosition == 0 && endPointClosedPosition == 0)) {
         resetMemory();
     } else {
         targetPosition = currentPosition;
@@ -39,7 +36,6 @@ void SystemState::resetMemory() {
 }
 
 void SystemState::throwFatalError(String userErrorMessage) {
-    _motor->stopMotor();
     systemStatus = sys_error;
     userMessage = userErrorMessage;
 }
@@ -60,12 +56,12 @@ void SystemState::updateStateAsString() {
             status = "sys_error";
             break;
     }
-    stateAsString = String::format("*%s* (endPointClosedPosition %d) - (currentPos %d) (targetPos %d) - (endPointOpenPos %d) ", status, endPointClosedPosition, currentPosition, targetPosition, endPointOpenPosition);
+    stateAsString = String::format("*%s* (endPointOpenPos %d) - (currentPos %d) (targetPos %d) -  (endPointClosedPosition %d)", status.c_str(), endPointOpenPosition, currentPosition, targetPosition, endPointClosedPosition);
 }
 
 void SystemState::loop() {
     // Save the latest positions if the motor is not moving
-    if (motor_stopped == _motor->motorStatus) {
+    if (targetPosition == currentPosition) {
         saveToMemory();
     }
     updateStateAsString();

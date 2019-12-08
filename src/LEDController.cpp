@@ -41,7 +41,7 @@ void LEDController::displayReset() {
 void LEDController::displayConfigure() {
     analogWrite(_ledRedPin, 128);
     analogWrite(_ledGreenPin, 128);
-    analogWrite(_ledBluePin, 128);
+    analogWrite(_ledBluePin, 0);
 }
 
 void LEDController::displayError() {

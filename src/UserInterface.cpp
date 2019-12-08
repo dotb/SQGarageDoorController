@@ -2,15 +2,15 @@
 #include "Motor.h"
 #include "SystemState.h"
 
-UserInterface::UserInterface(Motor *motor, 
-                  SystemState *sysState, 
-                  int upButtonPin, 
-                  int downButtonPin,
-                  int codeButtonPin,
-                  int setButtonPin,
-                  int mButtonPin) {
-    _motor = motor;
+UserInterface::UserInterface(SystemState *sysState,
+                            DoorController *doorController,
+                            int upButtonPin,
+                            int downButtonPin,
+                            int codeButtonPin,
+                            int setButtonPin,
+                            int mButtonPin) {
     _sysState = sysState;
+    _doorController = doorController;
     _upButtonPin = upButtonPin;
     _downButtonPin = downButtonPin;
     _codeButtonPin = codeButtonPin;
@@ -28,36 +28,34 @@ void UserInterface::handleButtons() {
     // Increment the up / open / backward point
     if (sys_configure_endpoints == _sysState->systemStatus && 
                                                  upButtonIsPressed()) {
-        _sysState->endPointOpenPosition = _sysState->currentPosition - 2;
-        _sysState->targetPosition = _sysState->endPointOpenPosition;
+        _doorController->nudgeOpenEndpoint();
 
     // Increment the down / closed / forward point
     } else if (sys_configure_endpoints == _sysState->systemStatus && 
                                                 downButtonIsPressed()) {
-        _sysState->endPointClosedPosition = _sysState->currentPosition + 2;
-        _sysState->targetPosition = _sysState->endPointClosedPosition;
+        _doorController->nudgeClosedEndpoint();
 
     // Enter configure mode
     } else if ((sys_normal == _sysState->systemStatus || 
                 sys_reset == _sysState->systemStatus) && 
                                                  setButtonIsPressed()) {
-        _motor->stopMotor();
+        _doorController->stopMotor();
         _sysState->systemStatus = sys_configure_endpoints;
         delay(500);
 
     // Exit configure mode
     } else if (sys_configure_endpoints == _sysState->systemStatus && 
                                                 setButtonIsPressed()) {
-        _motor->stopMotor();
+        _doorController->stopMotor();
         _sysState->systemStatus = sys_normal;
         _sysState->targetPosition = _sysState->currentPosition;
         delay(500);
 
     } else if (                                codeButtonIsPressed()) {
-        _motor->stopMotor();
+        _sysState->throwFatalError("User pressed CODE button");
         
     } else if (                                   mButtonIsPressed()) {
-        _motor->stopMotor();
+        _sysState->throwFatalError("User pressed M button");
     }
 }
 

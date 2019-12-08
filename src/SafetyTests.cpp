@@ -1,13 +1,11 @@
 #include "SafetyTests.h"
-#include "Motor.h"
 #include "SystemState.h"
 
-SafetyTests::SafetyTests(Motor *motor, SystemState *sysState) {
-    _motor = motor;
+SafetyTests::SafetyTests(SystemState *sysState) {
     _sysState = sysState;
 }
 
-bool SafetyTests::runSafetyTestsAndReturnIsSafe() {
+bool SafetyTests::ensureEverythingIsSafe() {
     // Ensure the door never goes past the open or closed positions
     if (_sysState->currentPosition > _sysState->endPointClosedPosition || _sysState->currentPosition < _sysState->endPointOpenPosition) {
         _sysState->throwFatalError("Door went past open or closed endpoints");
@@ -28,8 +26,4 @@ bool SafetyTests::runSafetyTestsAndReturnIsSafe() {
 
     // Everything is safe
     return true;
-}
-
-bool SafetyTests::ensureEverythingIsSafe() {
-    return runSafetyTestsAndReturnIsSafe();
 }

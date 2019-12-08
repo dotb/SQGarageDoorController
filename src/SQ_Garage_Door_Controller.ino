@@ -12,7 +12,7 @@
 #define relayTwoPin 6       // unrestricted interrupt
 
 // Analog Pins
-#define codeButtonPin A1     // interrupt shared with D4
+#define codeButtonPin A1    // interrupt shared with D4
 #define rotationInputPin A2 // unrestricted interrupt
 #define upButtonPin A3      // interrupt shared with D2, A0
 #define downButtonPin A4    // interrupt shared with D1 (PWM with D3)
@@ -22,17 +22,15 @@
 #define ledBluePin RX       // unrestricted interrupt (PWM)
 #define mButtonPin DAC      // interrupt shared with D3
 
-Motor motor(relayOnePin, 
-            relayTwoPin, 
+SystemState systemState;
+Motor motor(relayOnePin,
+            relayTwoPin,
             motorDriverPin);
-SystemState systemState(&motor);
-SafetyTests safetyTests(&motor, 
-                        &systemState);
+SafetyTests safetyTests(&systemState);
 DoorController doorController(&motor,
-                             &systemState,
-                             rotationInputPin);
-UserInterface userInterface(&motor,
-                            &systemState,
+                             &systemState);
+UserInterface userInterface(&systemState,
+                            &doorController,
                             upButtonPin, 
                             downButtonPin,
                             codeButtonPin,
@@ -47,7 +45,7 @@ LEDController ledController(&systemState,
 void setup() {
 
     // Ensure the motor is off
-    motor.stopMotor();
+    doorController.stopMotor();
 
     // Load previous stored state
     systemState.restoreFromMemory();
@@ -56,6 +54,7 @@ void setup() {
     ledController.lightOn();    
 
     // Attach an interrupt to count incrememental movement of the motor
+    pinMode(rotationInputPin, INPUT_PULLUP);
     attachInterrupt(rotationInputPin, motorDidChangeIncrement, CHANGE);
     
     // Map particle functions
@@ -89,15 +88,15 @@ void loop() {
 
             // Error, everybody out of the pool
             case sys_error:
-                motor.stopMotor();
+                doorController.stopMotor();
                 break;
         }
     } else {
         // Ensure the motor is stopped
-        motor.stopMotor();
+        doorController.stopMotor();
     }
-    
-    // Update the status LEDs
+
+    systemState.loop();
     ledController.loop();
 }
 
@@ -123,9 +122,11 @@ int lightOff(String param) {
 }
 
 int setDoorPosition(String param) {
+    doorController.setDoorPosition(param);
     return 0;
 }
 
 int resetMemory(String param) {
+    systemState.resetMemory();
     return 0;
 }

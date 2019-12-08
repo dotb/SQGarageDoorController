@@ -7,19 +7,20 @@
 
 class DoorController {
     public:
-        DoorController(Motor *motor, SystemState *sysState, int rotationInputPin);
+        DoorController(Motor *motor, SystemState *sysState);
         virtual void setDoorPosition(String newPercentage);
         virtual void motorDidChangeIncrement();
+        virtual void nudgeOpenEndpoint();
+        virtual void nudgeClosedEndpoint();
+        virtual void stopMotor();
         virtual void loop();
 
     private:
         SystemState *_sysState;
         Motor *_motor; 
         unsigned long _lastMotorMovementTimeStamp = 0;
-        int _rotationInputPin;
         virtual void syncDoorPosition();
         virtual int getAppropriateSpeed();
-        virtual bool doorHasReachedDestination();
 };
 
 #endif

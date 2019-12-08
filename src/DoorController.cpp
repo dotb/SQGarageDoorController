@@ -66,10 +66,10 @@ int DoorController::getAppropriateSpeed() {
 
     // Move fast if we need to cover distance
     } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 300) {
-        return 50;
+        return 0;
 
     // Move at a medium speed when we get closer to the resting point
-    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 40) {
+    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 50) {
         return 180;
 
     // By default move slowly, i.e. when close to the resting point

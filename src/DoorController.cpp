@@ -127,10 +127,16 @@ void DoorController::stopMotor() {
 void DoorController::updateMotorStatus() {
     switch (_motor->lastMotorCommand) {
         case motor_run_forward_closing:
+            if (motor_running_forward_closing != motorStatus) {
+                motorRunningStartTime = micros();
+            }
             motorStatus = motor_running_forward_closing;
             break;
 
         case motor_run_backward_opening:
+            if (motor_running_backward_opening != motorStatus) {
+                motorRunningStartTime = micros();
+            }
             motorStatus = motor_running_backward_opening;
             break;
 
@@ -147,7 +153,39 @@ void DoorController::updateMotorStatus() {
             break;
     }
 }
+
+/*
+ * Check if the motor is moving too slowly because it's become stuck.
+ * If the sensor hasn't fired in more than 3 seconds, the motor probably isn't moving yet.
+ * If the sensor speed is between 50ms and 3 seconds, there's probably a pinch issue
+ */
+void DoorController::checkPinchDetection() {
+    int speed = getAppropriateSpeed();
+    if (speed > 180) {
+        checkPinchDetectionWithSpeed(16000);
+    } else {
+        checkPinchDetectionWithSpeed(9000);
+    }
+}
+
+void DoorController::checkPinchDetectionWithSpeed(int speed) {    
+    
+    unsigned int motorTimeRunning = micros() - motorRunningStartTime;
+    if ((motor_running_forward_closing == motorStatus ||
+        motor_running_backward_opening == motorStatus) &&
+        motorTimeRunning > 2000000 &&
+        movementSensorSpeed > speed) {
+        stopMotor();
+        _sysState->userMessage = "Motor stuck, stopped";
+        movementSensorSpeedStr = String::format("pinch stop spd %d M: %d", speed, motorTimeRunning);
+        
+    } else {
+        // movementSensorSpeedStr = String::format("pinch runn M: %d", timeSinceLastMotorMovement);   
+    }
+}
+
 void DoorController::loop() {
     syncDoorPosition();
     updateMotorStatus();
+    // checkPinchDetection();
 }

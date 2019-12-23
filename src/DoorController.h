@@ -27,12 +27,19 @@ class DoorController {
         motor_status motorStatus = motor_stopped;
         unsigned long lastMotorMovementTimeStamp = 0;
         unsigned int movementSensorSpeed = 0;
+        String movementSensorSpeedStr = "0";
+        unsigned int motorRunningStartTime = 0;
+
     private:
         Motor *_motor; 
         SystemState *_sysState;
+        
+        
         virtual void syncDoorPosition();
         virtual int getAppropriateSpeed();
         virtual void updateMotorStatus();
+        virtual void checkPinchDetection();
+        virtual void checkPinchDetectionWithSpeed(int speed);  
 };
 
 #endif

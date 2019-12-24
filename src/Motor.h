@@ -4,14 +4,14 @@
 #include "Arduino.h"
 
 enum motor_command {
-  motor_run_forward_closing,
-  motor_run_backward_opening,
-  motor_stop
+  cmd_motor_run_forward_closing,
+  cmd_motor_run_backward_opening,
+  cmd_motor_stop
 };
 
 class Motor {
   public:
-    motor_command lastMotorCommand = motor_stop;
+    motor_command lastMotorCommand = cmd_motor_stop;
     Motor(int relayOnePin, int relayTwoPin, int motorDriverPin);
     virtual void turnMotorForward(int speed);
     virtual void turnMotorBackward(int speed);

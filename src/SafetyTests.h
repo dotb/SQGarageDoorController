@@ -18,6 +18,7 @@ private:
     Motor *_motor;
     SystemState *_sysState;
     unsigned int _motorRunStartTime = 0;
+    virtual bool isMotorSupposedToBeMoving();
 };
 
 #endif

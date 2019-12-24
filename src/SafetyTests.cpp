@@ -9,16 +9,31 @@ SafetyTests::SafetyTests(Motor *motor,
     _motor = motor;
 }
 
+bool SafetyTests::isMotorSupposedToBeMoving() {
+    bool isMotorStopped = cmd_motor_stop == _motor->lastMotorCommand;
+    return !isMotorStopped;
+}
+
 bool SafetyTests::ensureEverythingIsSafe() {
     // Ensure the door never goes past the open or closed positions
-    if (_sysState->currentPosition > _sysState->endPointClosedPosition || _sysState->currentPosition < _sysState->endPointOpenPosition) {
-        _sysState->throwFatalError("Door went past open or closed endpoints.");
+    if (_sysState->currentPosition < _sysState->endPointOpenPosition) {
+        _sysState->throwFatalError("Door went past open endpoint.");
+        return false;
+    }
+
+    if (_sysState->currentPosition > _sysState->endPointClosedPosition) {
+        _sysState->throwFatalError("Door went past closed endpoint.");
         return false;
     }
 
     // Ensure the target position never goes past the open or closed positions
-    if (_sysState->targetPosition > _sysState->endPointClosedPosition || _sysState->targetPosition < _sysState->endPointOpenPosition) {
-        _sysState->throwFatalError("The target position went past open or closed endpoints.");
+    if (_sysState->targetPosition < _sysState->endPointOpenPosition) {
+        _sysState->throwFatalError("The target position went past the open endpoint.");
+        return false;
+    }
+
+    if (_sysState->targetPosition > _sysState->endPointClosedPosition) {
+        _sysState->throwFatalError("The target position went past the closed endpoint.");
         return false;
     }
 

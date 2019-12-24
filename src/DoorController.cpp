@@ -58,11 +58,13 @@ int DoorController::getAppropriateSpeed() {
         return CONST_MOTOR_SPEED_MEDIUM;
 
     // Move fast if we need to cover distance
-    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > CONST_DOOR_DISTANCE_NEAR) {
+    } else if (sys_normal == _sysState->systemStatus 
+                && distanceToEnd > CONST_DOOR_DISTANCE_NEAR) {
         return CONST_MOTOR_SPEED_FAST;
 
     // Move at a medium speed when we get closer to the resting point
-    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > CONST_DOOR_DISTANCE_VERY_CLOSE) {
+    } else if (sys_normal == _sysState->systemStatus 
+                && distanceToEnd > CONST_DOOR_DISTANCE_VERY_CLOSE) {
         return CONST_MOTOR_SPEED_MEDIUM;
 
     // By default move slowly, i.e. when close to the resting point
@@ -124,24 +126,45 @@ void DoorController::stopMotor() {
     _sysState->targetPosition = _sysState->currentPosition;
 }
 
+/* Get the last known sensor trigger time.
+ * The lower the number, the faster the motor is turning.
+ * The larger the number, the slower the motor is turning.
+ * 0 Means the motor is not turning.
+ * We need at least one previous reading to return an accurate result.
+ */
+unsigned long DoorController::sensorTriggerSpeed() {
+    if (_movementSensorTriggerCount >= 2) {
+        return micros() - lastMotorMovementTimeStamp;
+    } else {
+        return 0;
+    }
+}
+
+/* This method manages the state transition of the motor / door. It
+ * wrapps the motor state and allows:
+ *  - detection for when the motor is freewheeling,
+ *  - detection of transitions between states.
+ */
 void DoorController::updateMotorStatus() {
     switch (_motor->lastMotorCommand) {
-        case motor_run_forward_closing:
+        case cmd_motor_run_forward_closing:
             if (motor_running_forward_closing != motorStatus) {
                 motorRunningStartTime = micros();
             }
             motorStatus = motor_running_forward_closing;
             break;
 
-        case motor_run_backward_opening:
+        case cmd_motor_run_backward_opening:
             if (motor_running_backward_opening != motorStatus) {
                 motorRunningStartTime = micros();
             }
             motorStatus = motor_running_backward_opening;
             break;
 
-        case motor_stop:
-            if (movementSensorSpeed > 100000) {
+        case cmd_motor_stop:
+            if (sensorTriggerSpeed() == 0 
+                || sensorTriggerSpeed() > CONST_MILLIS_AS_MICROS_500) {
+                _movementSensorTriggerCount = 0; // Reset the sensor count.
                 motorStatus = motor_stopped;
 
             } else if (motor_running_forward_closing == motorStatus) {
@@ -168,13 +191,13 @@ void DoorController::checkPinchDetection() {
     }
 }
 
-void DoorController::checkPinchDetectionWithSpeed(int speed) {    
+void DoorController::checkPinchDetectionWithSpeed(unsigned int speed) {    
     
     unsigned int motorTimeRunning = micros() - motorRunningStartTime;
     if ((motor_running_forward_closing == motorStatus ||
         motor_running_backward_opening == motorStatus) &&
         motorTimeRunning > 2000000 &&
-        movementSensorSpeed > speed) {
+        _movementSensorSpeed > speed) {
         stopMotor();
         _sysState->userMessage = "Motor stuck, stopped";
         movementSensorSpeedStr = String::format("pinch stop spd %d M: %d", speed, motorTimeRunning);
@@ -183,7 +206,7 @@ void DoorController::checkPinchDetectionWithSpeed(int speed) {
         // movementSensorSpeedStr = String::format("pinch runn M: %d", timeSinceLastMotorMovement);   
     }
 }
-
+    
 void DoorController::loop() {
     syncDoorPosition();
     updateMotorStatus();

@@ -17,7 +17,7 @@ void Motor::turnMotorForward(int speed) {
     digitalWrite(_relayOnePin, HIGH);
     digitalWrite(_relayTwoPin, LOW);
     analogWrite(_motorDriverPin, speed);
-    lastMotorCommand = motor_run_forward_closing;
+    lastMotorCommand = cmd_motor_run_forward_closing;
 }
 
 // Move backward / open
@@ -25,7 +25,7 @@ void Motor::turnMotorBackward(int speed) {
     digitalWrite(_relayOnePin, LOW);
     digitalWrite(_relayTwoPin, HIGH);
     analogWrite(_motorDriverPin, speed);
-    lastMotorCommand = motor_run_backward_opening;
+    lastMotorCommand = cmd_motor_run_backward_opening;
 }
 
 // Stop the motor
@@ -33,5 +33,5 @@ void Motor::stopMotor() {
     digitalWrite(_relayOnePin, LOW);
     digitalWrite(_relayTwoPin, LOW);
     digitalWrite(_motorDriverPin, HIGH);
-    lastMotorCommand = motor_stop;
+    lastMotorCommand = cmd_motor_stop;
 }

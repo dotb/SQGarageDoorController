@@ -26,36 +26,43 @@ UserInterface::UserInterface(SystemState *sysState,
 
 void UserInterface::handleButtons() {
     // Increment the up / open / backward point
-    if (sys_configure_endpoints == _sysState->systemStatus && 
-                                                 upButtonIsPressed()) {
+    if (sys_configure_endpoints == _sysState->systemStatus 
+                && upButtonIsPressed()) {
         _doorController->nudgeOpenEndpoint();
 
     // Increment the down / closed / forward point
-    } else if (sys_configure_endpoints == _sysState->systemStatus && 
-                                                downButtonIsPressed()) {
+    } else if (sys_configure_endpoints == _sysState->systemStatus 
+                && downButtonIsPressed()) {
         _doorController->nudgeClosedEndpoint();
 
     // Enter configure mode
-    } else if ((sys_normal == _sysState->systemStatus || 
-                sys_reset == _sysState->systemStatus) && 
-                                                 setButtonIsPressed()) {
+    } else if ((sys_normal == _sysState->systemStatus 
+                || sys_reset == _sysState->systemStatus) 
+                && setButtonIsPressed()) {
         _doorController->stopMotor();
         _sysState->systemStatus = sys_configure_endpoints;
         delay(500);
 
     // Exit configure mode
-    } else if (sys_configure_endpoints == _sysState->systemStatus && 
-                                                setButtonIsPressed()) {
+    } else if (sys_configure_endpoints == _sysState->systemStatus 
+                && setButtonIsPressed()) {
         _doorController->stopMotor();
         _sysState->systemStatus = sys_normal;
         _sysState->targetPosition = _sysState->currentPosition;
         delay(500);
 
-    } else if (                                codeButtonIsPressed()) {
+    // Throw an error for button combinations that are not supported
+    } else if (codeButtonIsPressed()) {
         _sysState->throwFatalError("User pressed CODE button");
         
-    } else if (                                   mButtonIsPressed()) {
+    } else if (mButtonIsPressed()) {
         _sysState->throwFatalError("User pressed M button");
+
+    } else if (upButtonIsPressed()) {
+        _sysState->throwFatalError("Up Button pressed when not in config mode");
+
+    } else if (downButtonIsPressed()) {
+        _sysState->throwFatalError("Down Button pressed when not in config mode");
     }
 }
 

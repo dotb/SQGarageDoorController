@@ -28,12 +28,12 @@ void DoorController::syncDoorPosition() {
     // move the door toward the destimation position
     int speed = getAppropriateSpeed();
 
-    // Move the door forward (close the door)
-    if (_sysState->currentPosition < _sysState->targetPosition - 2) {
+    // Move the door forward (close the door) if we're less than 2 increments away from the  closed position
+    if (_sysState->currentPosition < _sysState->targetPosition - CONST_MOTOR_INCREMENTS_2) {
         _motor->turnMotorForward(speed);
 
-    // Move the door backward (open the door)
-    } else if (_sysState->currentPosition > _sysState->targetPosition + 2) {
+    // Move the door backward (open the door) if we're more than 2 increments away from the open position
+    } else if (_sysState->currentPosition > _sysState->targetPosition + CONST_MOTOR_INCREMENTS_2) {
         _motor->turnMotorBackward(speed);
 
     // We've reached the destination, stop the motor
@@ -55,19 +55,19 @@ int DoorController::getAppropriateSpeed() {
 
     // Move slowly when setting end points
     if (sys_configure_endpoints == _sysState->systemStatus) {
-        return 180;
+        return CONST_MOTOR_SPEED_MEDIUM;
 
     // Move fast if we need to cover distance
-    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 300) {
-        return 0;
+    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > CONST_DOOR_DISTANCE_NEAR) {
+        return CONST_MOTOR_SPEED_FAST;
 
     // Move at a medium speed when we get closer to the resting point
-    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > 50) {
-        return 180;
+    } else if (sys_normal == _sysState->systemStatus && distanceToEnd > CONST_DOOR_DISTANCE_VERY_CLOSE) {
+        return CONST_MOTOR_SPEED_MEDIUM;
 
     // By default move slowly, i.e. when close to the resting point
     } else {
-        return 200;
+        return CONST_MOTOR_SPEED_SLOW;
     }
 }
 
@@ -78,8 +78,9 @@ int DoorController::getAppropriateSpeed() {
 void DoorController::motorDidChangeIncrement() {
     // Debounce the interrupt
     unsigned long timeStampNow = micros();
-    movementSensorSpeed = timeStampNow - lastMotorMovementTimeStamp;
-    if (movementSensorSpeed > 1000) {
+    _movementSensorSpeed = timeStampNow - lastMotorMovementTimeStamp;
+    if (_movementSensorSpeed > CONST_SENSOR_DEBOUNCE_TIME_MICROS) {
+        _movementSensorTriggerCount++;
         lastMotorMovementTimeStamp = timeStampNow;
 
         switch (motorStatus) {
@@ -103,19 +104,18 @@ void DoorController::motorDidChangeIncrement() {
                 _sysState->currentPosition--;
                 break;
         }
-
     }
 }
 
 // Increment the up / open / backward point
 void DoorController::nudgeOpenEndpoint() {
-    _sysState->endPointOpenPosition = _sysState->currentPosition - 4;
+    _sysState->endPointOpenPosition = _sysState->currentPosition - CONST_MOTOR_INCREMENTS_4;
     _sysState->targetPosition = _sysState->endPointOpenPosition;
 }
 
 // Increment the down / closed / forward point
 void DoorController::nudgeClosedEndpoint() {
-    _sysState->endPointClosedPosition = _sysState->currentPosition + 4;
+    _sysState->endPointClosedPosition = _sysState->currentPosition + CONST_MOTOR_INCREMENTS_4;
     _sysState->targetPosition = _sysState->endPointClosedPosition;
 }
 

@@ -132,12 +132,23 @@ void DoorController::stopMotor() {
  * 0 Means the motor is not turning.
  * We need at least one previous reading to return an accurate result.
  */
-unsigned long DoorController::sensorTriggerSpeed() {
+unsigned long DoorController::movementSensorSpeed() {
     if (_movementSensorTriggerCount >= 2) {
-        return micros() - lastMotorMovementTimeStamp;
+        return _movementSensorSpeed;
     } else {
-        return 0;
+        return CONST_TIME_ZERO;
     }
+}
+
+/* Return the time since the motor last moved.
+ * This will be short if the motor is moving, and long if it has stopped.
+ */
+unsigned long DoorController::timeSinceMotorMoved() {
+    return micros() - lastMotorMovementTimeStamp;
+}
+
+unsigned long DoorController::motorRunningTimeMicros() {
+    return micros() - motorRunningStartTimeStamp;
 }
 
 /* This method manages the state transition of the motor / door. It
@@ -149,21 +160,20 @@ void DoorController::updateMotorStatus() {
     switch (_motor->lastMotorCommand) {
         case cmd_motor_run_forward_closing:
             if (motor_running_forward_closing != motorStatus) {
-                motorRunningStartTime = micros();
+                motorRunningStartTimeStamp = micros();
             }
             motorStatus = motor_running_forward_closing;
             break;
 
         case cmd_motor_run_backward_opening:
             if (motor_running_backward_opening != motorStatus) {
-                motorRunningStartTime = micros();
+                motorRunningStartTimeStamp = micros();
             }
             motorStatus = motor_running_backward_opening;
             break;
 
         case cmd_motor_stop:
-            if (sensorTriggerSpeed() == 0 
-                || sensorTriggerSpeed() > CONST_MILLIS_AS_MICROS_500) {
+            if (timeSinceMotorMoved() > CONST_MILLIS_AS_MICROS_500) {
                 _movementSensorTriggerCount = 0; // Reset the sensor count.
                 motorStatus = motor_stopped;
 
@@ -184,31 +194,40 @@ void DoorController::updateMotorStatus() {
  */
 void DoorController::checkPinchDetection() {
     int speed = getAppropriateSpeed();
-    if (speed > 180) {
-        checkPinchDetectionWithSpeed(16000);
+    if (sys_configure_endpoints == _sysState->systemStatus) {
+        checkPinchDetectionWithSensorSpeed(CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW_CONFIG);
+        
+    } else if (CONST_MOTOR_SPEED_SLOW == speed) {
+        checkPinchDetectionWithSensorSpeed(CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW);
+
+    } else if (CONST_MOTOR_SPEED_MEDIUM == speed) {
+        checkPinchDetectionWithSensorSpeed(CONST_PINCH_MAX_SPEED_WHEN_MOTOR_MEDIUM);
+
     } else {
-        checkPinchDetectionWithSpeed(9000);
+        checkPinchDetectionWithSensorSpeed(CONST_PINCH_MAX_SPEED_WHEN_MOTOR_FAST);
     }
 }
 
-void DoorController::checkPinchDetectionWithSpeed(unsigned int speed) {    
-    
-    unsigned int motorTimeRunning = micros() - motorRunningStartTime;
-    if ((motor_running_forward_closing == motorStatus ||
-        motor_running_backward_opening == motorStatus) &&
-        motorTimeRunning > 2000000 &&
-        _movementSensorSpeed > speed) {
+void DoorController::checkPinchDetectionWithSensorSpeed(unsigned long maxAllowedSensorSpeed) {    
+    if (motorRunningTimeMicros() > CONST_SECONDS_AS_MICROS_1
+        && movementSensorSpeed() > maxAllowedSensorSpeed) {
+        _sysState->userMessage = String::format("Change %d to %d.", maxAllowedSensorSpeed, movementSensorSpeed());
         stopMotor();
-        _sysState->userMessage = "Motor stuck, stopped";
-        movementSensorSpeedStr = String::format("pinch stop spd %d M: %d", speed, motorTimeRunning);
         
-    } else {
-        // movementSensorSpeedStr = String::format("pinch runn M: %d", timeSinceLastMotorMovement);   
+        // Move backward a few increments to release the pinched object
+        switch (motorStatus) {
+            case motor_running_forward_closing:
+                _sysState->targetPosition = _sysState->currentPosition - CONST_PINCH_ROLL_BACK_AMOUNT;
+                break;
+            case motor_running_backward_opening:
+                _sysState->targetPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
+                break;
+        }
     }
 }
     
 void DoorController::loop() {
     syncDoorPosition();
     updateMotorStatus();
-    // checkPinchDetection();
+    checkPinchDetection();
 }

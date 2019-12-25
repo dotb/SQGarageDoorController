@@ -37,6 +37,7 @@ class DoorController {
         SystemState *_sysState;
         unsigned int _movementSensorTriggerCount = 0;
         unsigned int _movementSensorSpeed = 0;
+        unsigned int _pinchDetectionCount = 0;
         
         // Position constants
         int CONST_MOTOR_INCREMENTS_2 = 2;
@@ -63,6 +64,7 @@ class DoorController {
         unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW = 30000;
         unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW_CONFIG = 45000;
         int CONST_PINCH_ROLL_BACK_AMOUNT = 100;
+        unsigned int CONST_PINCH_MAX_PINCH_EVENTS = 2;
 
         virtual void syncDoorPosition();
         virtual int getAppropriateSpeed();

@@ -173,8 +173,9 @@ void DoorController::updateMotorStatus() {
             break;
 
         case cmd_motor_stop:
-            if (timeSinceMotorMoved() > CONST_MILLIS_AS_MICROS_500) {
+            if (timeSinceMotorMoved() > CONST_SECONDS_AS_MICROS_1) {
                 _movementSensorTriggerCount = 0; // Reset the sensor count.
+                _pinchDetectionCount = 0; // Reset the pinch event count.
                 motorStatus = motor_stopped;
 
             } else if (motor_running_forward_closing == motorStatus) {
@@ -209,23 +210,27 @@ void DoorController::checkPinchDetection() {
 }
 
 void DoorController::checkPinchDetectionWithSensorSpeed(unsigned long maxAllowedSensorSpeed) {    
+    unsigned long sensorSpeed = movementSensorSpeed();
     if (motorRunningTimeMicros() > CONST_SECONDS_AS_MICROS_1
-        && movementSensorSpeed() > maxAllowedSensorSpeed) {
-        _sysState->userMessage = String::format("Change %d to %d.", maxAllowedSensorSpeed, movementSensorSpeed());
+        && sensorSpeed > maxAllowedSensorSpeed) {
+        _sysState->userMessage = String::format("Pinch! max: %d actual: %d.", maxAllowedSensorSpeed, sensorSpeed);
+        _pinchDetectionCount++;
         stopMotor();
         
-        // Move backward a few increments to release the pinched object
-        switch (motorStatus) {
-            case motor_running_forward_closing:
-                _sysState->targetPosition = _sysState->currentPosition - CONST_PINCH_ROLL_BACK_AMOUNT;
-                break;
-            case motor_running_backward_opening:
-                _sysState->targetPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
-                break;
+        // Move backward a few increments to release the pinched object, but only if we haven't recently experienced a pinch detection error.
+        if (_pinchDetectionCount < CONST_PINCH_MAX_PINCH_EVENTS) {
+            switch (motorStatus) {
+                case motor_running_forward_closing:
+                    _sysState->targetPosition = _sysState->currentPosition - CONST_PINCH_ROLL_BACK_AMOUNT;
+                    break;
+                case motor_running_backward_opening:
+                    _sysState->targetPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
+                    break;
+            }
         }
     }
 }
-    
+
 void DoorController::loop() {
     syncDoorPosition();
     updateMotorStatus();

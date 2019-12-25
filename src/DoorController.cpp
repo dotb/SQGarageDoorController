@@ -226,7 +226,9 @@ void DoorController::checkPinchDetectionWithSensorSpeed(unsigned long maxAllowed
                 case motor_running_backward_opening:
                     _sysState->targetPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
                     break;
-            }
+            } 
+        } else {
+            _sysState->userMessage = String::format("Too many pinch events! max: %d actual: %d.", maxAllowedSensorSpeed, sensorSpeed);
         }
     }
 }

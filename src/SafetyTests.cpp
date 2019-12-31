@@ -43,21 +43,36 @@ bool SafetyTests::ensureEverythingIsSafe() {
         return false;
     }
 
+    // Ensure the endpoint positions are not too far apart
+    if (_sysState->endPointOpenPosition - _sysState->endPointClosedPosition > CONST_MAX_ENDPONT_DISTANCE) {
+        _sysState->throwFatalError("The endpoints are too far apart.");
+        return false;
+    }
+
+    // Ensure the open endpoint is not a way off number
+    if (_sysState->endPointOpenPosition < CONST_MAX_ENDPONT_OPEN_POS) {
+        _sysState->throwFatalError("The open endpoint is too low.");
+        return false;
+    }
+
+    // Ensure the closed endpoint is not a way off number
+    if (_sysState->endPointClosedPosition > CONST_MAX_ENDPONT_CLOSED_POS) {
+        _sysState->throwFatalError("The closed endpoint is too high.");
+        return false;
+    }
+
     /* 
      * Ensure the motor sensor is triggering if the motor is running.
      * Monitor the motor start time, if after 100ms the sensor has not raised
      * a notification, throw an error.
      */ 
     unsigned int timeNow = millis();
-    if (motor_stopped == _motor->lastMotorCommand) {
+
+    // Keep a note of the time the motor started running
+    if (!isMotorSupposedToBeMoving()) {
         _motorRunStartTime = timeNow;
-    } else if ((motor_run_forward_closing == _motor->lastMotorCommand || 
-        motor_run_backward_opening == _motor->lastMotorCommand) &&
-        timeNow - _doorController->lastMotorMovementTimeStamp > 100000 &&
-        timeNow - _motorRunStartTime > 100000) {
-            _sysState->throwFatalError("The motor sensor is reading too slow or not working.");
-            return false;
-        }
+    }
+
 
     // Everything is safe
     return true;

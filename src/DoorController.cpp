@@ -217,14 +217,19 @@ void DoorController::checkPinchDetectionWithSensorSpeed(unsigned long maxAllowed
         _pinchDetectionCount++;
         stopMotor();
         
-        // Move backward a few increments to release the pinched object, but only if we haven't recently experienced a pinch detection error.
+        /* Move backward a few increments to release the pinched object, but only if we haven't recently experienced a pinch detection error.
+         * Roll back to an end-point if we're close to it so that we don't overshoot the mark or an end-point.
+         */
         if (_pinchDetectionCount < CONST_PINCH_MAX_PINCH_EVENTS) {
+            int proposedRollbackPosition = _sysState->currentPosition;
             switch (motorStatus) {
                 case motor_running_forward_closing:
-                    _sysState->targetPosition = _sysState->currentPosition - CONST_PINCH_ROLL_BACK_AMOUNT;
+                    proposedRollbackPosition = _sysState->currentPosition - CONST_PINCH_ROLL_BACK_AMOUNT;
+                    _sysState->targetPosition = max(proposedRollbackPosition, _sysState->endPointOpenPosition);
                     break;
                 case motor_running_backward_opening:
-                    _sysState->targetPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
+                    proposedRollbackPosition = _sysState->currentPosition + CONST_PINCH_ROLL_BACK_AMOUNT;
+                    _sysState->targetPosition = min(proposedRollbackPosition, _sysState->endPointClosedPosition);
                     break;
             } 
         } else {

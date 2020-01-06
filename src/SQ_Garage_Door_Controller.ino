@@ -124,6 +124,7 @@ int lightOff(String param) {
 }
 
 int setDoorPosition(String param) {
+    lightOn("");
     doorController.setDoorPosition(param);
     return 0;
 }

@@ -66,6 +66,7 @@ void setup() {
     Particle.function("resetMemory", resetMemory);
     Particle.variable("state", systemState.stateAsString);
     Particle.variable("userMessage", systemState.userMessage);
+    Particle.variable("currentPosition", systemState.currentPositionPercentage);
 }
 
 void loop() {

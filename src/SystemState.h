@@ -17,6 +17,7 @@ class SystemState {
     sys_status systemStatus = sys_error;
     String stateAsString = "OK";
     String userMessage = "OK";
+    int currentPositionPercentage = 0;
 
     // Position variables
     int currentPosition = 0;
@@ -37,6 +38,7 @@ private:
 
     virtual void saveToMemory();
     virtual void updateStateAsString();
+    virtual void updateCurrentPositionPercentage();
 };
 
 #endif

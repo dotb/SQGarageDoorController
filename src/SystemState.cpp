@@ -59,10 +59,15 @@ void SystemState::updateStateAsString() {
     stateAsString = String::format("*%s* (endPointOpenPos %d) - (currentPos %d) (targetPos %d) -  (endPointClosedPosition %d)", status.c_str(), endPointOpenPosition, currentPosition, targetPosition, endPointClosedPosition);
 }
 
+void SystemState::updateCurrentPositionPercentage() {
+    currentPositionPercentage = map(currentPosition, endPointOpenPosition, endPointClosedPosition, 100, 0);
+}
+
 void SystemState::loop() {
     // Save the latest positions if the motor is not moving
     if (targetPosition == currentPosition) {
         saveToMemory();
     }
     updateStateAsString();
+    updateCurrentPositionPercentage();
 }

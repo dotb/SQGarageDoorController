@@ -59,9 +59,9 @@ class DoorController {
         // Pinch detection parameters
         // 7500us between ticks when fast
         // 14000us between ticks when slow
-        unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_FAST = 10550;
+        unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_FAST = 11000;
         unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_MEDIUM = 27000;
-        unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW = 40000;
+        unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW = 43000;
         unsigned long CONST_PINCH_MAX_SPEED_WHEN_MOTOR_SLOW_CONFIG = 45000;
         int CONST_PINCH_ROLL_BACK_AMOUNT = 100;
         unsigned int CONST_PINCH_MAX_PINCH_EVENTS = 2;
